@@ -5,23 +5,22 @@ import torch.nn as nn
 from ..models.vgg19_model import Vgg19
 
 
-class StyleLoss(nn.Module):
+class VGGLoss(nn.Module):
     def __init__(self):
-        super(StyleLoss, self).__init__()
+        super(VGGLoss, self).__init__()
         self.vgg = Vgg19().cuda()
+        self.criterion = nn.L1Loss()
         self.weights = [1.0 / 16, 1.0 / 8, 1.0 / 4, 1.0 / 2, 1.0]
 
     def forward(self, x, y):
         x_vgg, y_vgg = self.vgg(x), self.vgg(y)
         loss = 0
         for i in range(len(x_vgg)):
-            N, C, H, W = x_vgg[i].shape
-            for n in range(N):
-                phi_x = x_vgg[i][n]
-                phi_y = y_vgg[i][n]
-                phi_x = phi_x.reshape(C, H * W)
-                phi_y = phi_y.reshape(C, H * W)
-                G_x = torch.matmul(phi_x, phi_x.t())
-                G_y = torch.matmul(phi_y, phi_y.t())
-                loss += torch.sqrt(torch.mean((G_x - G_y) ** 2)) * self.weights[i]
+            loss += self.weights[i] * self.criterion(x_vgg[i], y_vgg[i].detach())
+        return loss
+
+    def warp(self, x, y):
+        x_vgg, y_vgg = self.vgg(x), self.vgg(y)
+        loss = 0
+        loss += self.weights[4] * self.criterion(x_vgg[4], y_vgg[4].detach())
         return loss

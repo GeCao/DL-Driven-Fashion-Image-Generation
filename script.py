@@ -1,6 +1,10 @@
-import torch
+import os
+import numpy as np
+from src.utils import FXAA, read_img
+import cv2
 
-A = torch.ones(size=torch.Size([3, 8, 16]))  # i,k
-B = torch.ones(size=torch.Size([3, 9, 16]))  # j,k
 
-print(torch.matmul(A, B.permute(0, 2, 1)).shape)
+file_path = os.path.join(os.path.abspath(os.curdir), 'data/transferred.png')
+cloth = read_img(file_path)  # [W, H, C] BGR格式载入
+cloth = FXAA(cloth)
+cv2.imwrite(os.path.join(os.path.abspath(os.curdir), 'data/postprossed_transferred.png'), cloth)

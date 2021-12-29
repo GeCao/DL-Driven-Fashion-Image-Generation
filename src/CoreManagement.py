@@ -2,6 +2,8 @@ import os, time, math
 import random
 import numpy as np
 import torch
+import torchvision.datasets as dset
+import torchvision.transforms as transforms
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset, TensorDataset
 
@@ -21,8 +23,8 @@ class CoreComponent:
 
         self.model_name = param_dict['model']
         if self.model_name == 'default':
-            self.transfer_style_model = StyleTransferModel
-            self.generate_style_model = StyleGenerationModel
+            self.transfer_style_model = StyleTransferModel(self)
+            self.generate_style_model = StyleGenerationModel(self)
         else:
             self.transfer_style_model = None
             self.generate_style_model = None
@@ -57,52 +59,59 @@ class CoreComponent:
         # TODO: DataSet Read with [B, C, H, W] mode and Process and Augmentation (Yining / Jiduan)
         # TODO:     Content DataSet: Images where their style need to be changed
         # TODO:     Style DataSet: Images which will be used to generate new style
-        self.train_content, self.train_style, self.test_content, self.test_style = \
-            self.data_factory.get_dataset(train_percent=self.train_percent)
+        # self.train_content, self.train_style, self.test_content, self.test_style = \
+            # self.data_factory.get_dataset(train_percent=self.train_percent)
 
         torch.random.manual_seed(self.random_seed)
 
-        self.content_data_loader = DataLoader(TensorDataset(self.train_content), batch_size=self.batch_size, shuffle=True)
-        self.style_data_loader = DataLoader(TensorDataset(self.train_style), batch_size=1, shuffle=False)
-        self.generate_style_model.initialization()
-        self.transfer_style_model.initialization()
+        # self.content_data_loader = DataLoader(TensorDataset(self.train_content), batch_size=self.batch_size, shuffle=True)
 
         self.initialized = True
 
     def style_generation(self):
-        pass
+        self.generate_style_model.initialization()
+
+        model_batch_size = self.generate_style_model.get_batch_size()
+        model_total_epochs = self.generate_style_model.get_total_epochs()
+        self.log_factory.InfoLog("Training of style generation start")
+        self.style_data_loader = DataLoader(TensorDataset(self.train_style),
+                                            batch_size=model_batch_size,
+                                            shuffle=True,
+                                            num_workers=4)
+        for epoch in range(model_total_epochs):
+            for i, style_data in enumerate(self.style_data_loader):
+                self.generate_style_model.train_model(epoch, i, style_data)
+        self.log_factory.InfoLog("Training of style generation end")
+
+    def style_transfer(self):
+        cloth = read_img(os.path.join(self.data_path, 'cloth.jpg'))
+        style_texture = read_img(os.path.join(self.data_path, 'texture.png'))
+        mask = np.mean(cloth, 2)[:, :, np.newaxis] < 244
+        cloth = numpy2Tensor(cloth)
+        style_texture = numpy2Tensor(style_texture)
+        noise = gen_noise(cloth.shape)
+
+        noise = torch.autograd.Variable(noise, requires_grad=True)
+
+        self.transfer_style_model.initialization(cloth, style_texture, noise)
+
+        model_total_epochs = self.transfer_style_model.get_total_epochs()
+        for epoch in range(model_total_epochs):
+            self.transfer_style_model.train_model(epoch)
+        noise = self.transfer_style_model.get_noise_data()
+        output = tensor2numpy(noise.clamp(-1, 1)).astype(np.uint8)
+        output = output * mask + (1 - mask) * 255
+        cv2.imwrite(os.path.join(self.data_path, 'transferred.png'), output)
 
     def run(self):
         if self.model_name == 'default':
             # TODO: 1. Style generation (Ge Cao)
             # TODO: Your DataSet: self.train_style, self.test_style;    your output: style_images
-            style_images = self.style_generation()
+            # style_images = self.style_generation()
 
             # TODO: 2. Style Transfer (Han Yang)
             # TODO: Your DataSet: style_images, self.train_content, self.test_content(如果不需要测试集，就把它当作验证集来用)
-            for i in range(style_images.shape[0]):
-                style_image = style_images[i, ...]  # [C, H, W]
-                train_loss = 0.0
-                test_losses, train_losses = [], []
-                for epoch in range(self.total_epoch):
-                    for j, (input_train_content,) in enumerate(self.content_data_loader):
-                        self.transfer_style_model.optimizer.zero_grad()
-                        predicted_y = self.transfer_style_model(input_train_content)
-                        train_loss = self.transfer_style_model.compute_loss(predicted_y)
-                        train_loss.backward()
-                        self.transfer_style_model.optimizer.step()
-
-                    if epoch % 200 == 0:
-                        with torch.no_grad():
-                            test_loss = self.transfer_style_model.compute_loss(self.transfer_style_model(self.test_content),
-                                                                      self.test_content.squeeze())
-                            self.log_factory.InfoLog(
-                                "Epoch={}, while test loss={}, train loss={}".format(epoch, test_loss, train_loss))
-                            train_losses.append(train_loss.item())
-                            test_losses.append(test_loss.item())
-
-                            model_evaluation(test_losses, train_losses,
-                                             save_path=os.path.join(self.data_path, 'train_eval.png'), epoch_step=200)
+            self.style_transfer()
 
     def kill(self):
         self.log_factory.kill()

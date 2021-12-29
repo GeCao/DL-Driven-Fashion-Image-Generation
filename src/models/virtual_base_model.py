@@ -6,6 +6,7 @@ class VirtualBaseModel(torch.nn.Module):
     def __init__(self, core_management):
         super(VirtualBaseModel, self).__init__()
         self.core_management = core_management
+        self.log_factory = None
         self.device = core_management.device
 
         self.batch_size = None
@@ -18,7 +19,10 @@ class VirtualBaseModel(torch.nn.Module):
         self.initialized = False
 
     def initialization(self):
-        pass
+        self.log_factory = self.core_management.log_factory
+
+    def get_total_epochs(self):
+        return self.total_epoch
 
     def forward(self, input):
         pass

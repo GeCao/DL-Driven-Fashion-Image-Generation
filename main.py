@@ -4,8 +4,8 @@ import argparse
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model', type=str, default='nnet', choices=['default'], help='type of models')
-    parser.add_argument('--device', type=str, default='cpu', choices=['cuda', 'cpu'], help='type of device')
+    parser.add_argument('--model', type=str, default='default', choices=['default'], help='type of models')
+    parser.add_argument('--device', type=str, default='cuda', choices=['cuda', 'cpu'], help='type of device')
     parser.add_argument('--random_seed', type=int, default=0, help='choose a random seed for our project')
     parser.add_argument('--log_to_disk', type=bool, default=False, choices=[True, False],
                         help='If you hope to get a log file after a running ended, choose this as true')
