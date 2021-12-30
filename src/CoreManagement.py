@@ -2,8 +2,8 @@ import os, time, math
 import random
 import numpy as np
 import torch
-import torchvision.datasets as dset
-import torchvision.transforms as transforms
+import torchvision
+import matplotlib.pyplot as plt
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset, TensorDataset
 
@@ -35,9 +35,7 @@ class CoreComponent:
         self.content_data_loader = None
         self.style_data_loader = None
 
-        self.train_content = None
         self.train_style = None
-        self.test_content = None
         self.test_style = None
 
         self.train_percent = 0.95  # 如果不需要test集，就把这一参数设置成1.0
@@ -59,8 +57,7 @@ class CoreComponent:
         # TODO: DataSet Read with [B, C, H, W] mode and Process and Augmentation (Yining / Jiduan)
         # TODO:     Content DataSet: Images where their style need to be changed
         # TODO:     Style DataSet: Images which will be used to generate new style
-        # self.train_content, self.train_style, self.test_content, self.test_style = \
-            # self.data_factory.get_dataset(train_percent=self.train_percent)
+        self.train_style, self.test_style = self.data_factory.get_style_dataset(train_percent=self.train_percent)
 
         torch.random.manual_seed(self.random_seed)
 
@@ -69,15 +66,14 @@ class CoreComponent:
         self.initialized = True
 
     def style_generation(self):
-        self.generate_style_model.initialization()
+        self.generate_style_model.initialization(self.train_style.shape)
 
         model_batch_size = self.generate_style_model.get_batch_size()
         model_total_epochs = self.generate_style_model.get_total_epochs()
-        self.log_factory.InfoLog("Training of style generation start")
         self.style_data_loader = DataLoader(TensorDataset(self.train_style),
                                             batch_size=model_batch_size,
-                                            shuffle=True,
-                                            num_workers=4)
+                                            shuffle=True)
+        self.log_factory.InfoLog("Training of style generation start")
         for epoch in range(model_total_epochs):
             for i, style_data in enumerate(self.style_data_loader):
                 self.generate_style_model.train_model(epoch, i, style_data)
@@ -107,11 +103,11 @@ class CoreComponent:
         if self.model_name == 'default':
             # TODO: 1. Style generation (Ge Cao)
             # TODO: Your DataSet: self.train_style, self.test_style;    your output: style_images
-            # style_images = self.style_generation()
+            self.style_generation()
 
             # TODO: 2. Style Transfer (Han Yang)
             # TODO: Your DataSet: style_images, self.train_content, self.test_content(如果不需要测试集，就把它当作验证集来用)
-            self.style_transfer()
+            # self.style_transfer()
 
     def kill(self):
         self.log_factory.kill()

@@ -53,9 +53,9 @@ def tensor2numpy(img):
     return img[0].numpy()
 
 
-def read_img(path):
+def read_img(path, cut_size=(256, 256)):
     img = cv2.imread(path)
-    img = cv2.resize(img, (256, 256))
+    img = cv2.resize(img, cut_size)
     return img
 
 

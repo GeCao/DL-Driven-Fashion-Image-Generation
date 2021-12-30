@@ -1,8 +1,11 @@
+import os
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from .virtual_base_model import VirtualBaseModel
 from ..losses.default_loss import DefaultLoss
+import cv2
 
 
 class Generator(nn.Module):
@@ -68,7 +71,7 @@ class StyleGenerationModel(VirtualBaseModel):
         super(StyleGenerationModel, self).__init__(core_management)
 
         self.device = None
-        self.batch_size = 128
+        self.batch_size = 16
         self.total_epoch = 2000
         self.lr = 0.0002
         self.beta1 = 0.5  # for Adam optimizer
@@ -95,7 +98,7 @@ class StyleGenerationModel(VirtualBaseModel):
 
     def initialization(self, image_shape=None):
         self.log_factory = self.core_management.log_factory
-        C, H, W = image_shape[0], image_shape[1], image_shape[2]
+        C, H, W = image_shape[1], image_shape[2], image_shape[3]
         self.channels = C
         if H != W:
             self.log_factory.ErrorLog("An image which has different Width and Height cannot be accepted by style generation")
@@ -105,8 +108,8 @@ class StyleGenerationModel(VirtualBaseModel):
         self.generator_losses_ = []
         self.discriminator_losses = []
 
-        self.generator_ = Generator(self.nz, self.num_of_generator_features, self.channels)
-        self.discriminator_ = Discriminator(self.num_of_discriminator_features, self.channels)
+        self.generator_ = Generator(self.nz, self.num_of_generator_features, self.channels).to(self.device)
+        self.discriminator_ = Discriminator(self.num_of_discriminator_features, self.channels).to(self.device)
         self.generator_.apply(self.weights_init)
         self.discriminator_.apply(self.weights_init)
 
@@ -129,12 +132,12 @@ class StyleGenerationModel(VirtualBaseModel):
 
     def train_model(self, epoch, i, style_data):
         self.discriminator_.zero_grad()
-        label = torch.full((self.channels,), self.real_label, dtype=torch.float, device=self.device)
+        label = torch.full((style_data[0].shape[0],), self.real_label, dtype=torch.float, device=self.device)
         output = self.discriminator_(style_data[0]).view(-1)
         errD_real = self.loss(output, label)
         errD_real.backward()
 
-        noise = torch.randn(self.channels, self.nz, 1, 1, device=self.device)
+        noise = torch.randn(style_data[0].shape[0], self.nz, 1, 1, device=self.device)
         fake = self.generator_(noise)
         label.fill_(self.fake_label)
         output = self.discriminator_(fake.detach()).view(-1)
@@ -148,7 +151,7 @@ class StyleGenerationModel(VirtualBaseModel):
 
         self.optimizer_G_.zero_grad()
         label.fill_(self.real_label)
-        output = self.optimizer_D_(fake).view(-1)
+        output = self.discriminator_(fake).view(-1)
         errG = self.loss(output, label)
         errG.backward()
         self.optimizer_G_.step()
@@ -156,6 +159,13 @@ class StyleGenerationModel(VirtualBaseModel):
         if i % 50 == 0:
             self.log_factory.InfoLog("epoch={}/{}, i={}, loss_G={}, loss_D={}".format(
                 epoch, self.get_total_epochs(), i, errG.item(), errD.item()))
+        if epoch % 100 == 0:
+            with torch.no_grad():
+                noise = torch.randn(style_data[0].shape[0], self.nz, 1, 1, device=self.device)
+                output_images = self.generator_(noise).permute(0, 2, 3, 1).cpu().numpy()
+                for k in range(output_images.shape[0]):
+                    cv2.imwrite(os.path.join(self.core_management.data_path, "generated_styles/" + str(k) + ".png"), output_images[k])
+
 
         self.generator_losses_.append(errG.item())
         self.discriminator_losses.append(errD.item())

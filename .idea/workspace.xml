@@ -2,27 +2,11 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="3f293081-6ba9-40a6-a7b1-e30a9bec8c0b" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/data/cloth.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/data/texture.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/losses/style_generation_loss.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/losses/vgg_loss.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/models/vgg19_model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.name" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/DL-Driven-Fashion-Image-Generation.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/DL-Driven-Fashion-Image-Generation.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/readme.md" beforeDir="false" afterPath="$PROJECT_DIR$/readme.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/script.py" beforeDir="false" afterPath="$PROJECT_DIR$/script.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/CoreManagement.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/CoreManagement.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/losses/content_loss.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/losses/style_loss.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/losses/style_loss.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/data_factory/data_factory.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/data_factory/data_factory.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/models/style_generation_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/models/style_generation_model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/models/style_transfer_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/models/style_transfer_model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/models/virtual_base_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/models/virtual_base_model.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -64,7 +48,7 @@
       <recent name="C:\homework\DL-Driven-Fashion-Image-Generation\data" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.script">
+  <component name="RunManager" selected="Python.main">
     <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="DL-Driven-Fashion-Image-Generation" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -130,8 +114,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.script" />
         <item itemvalue="Python.main" />
+        <item itemvalue="Python.script" />
         <item itemvalue="Python.utils" />
       </list>
     </recent_temporary>
