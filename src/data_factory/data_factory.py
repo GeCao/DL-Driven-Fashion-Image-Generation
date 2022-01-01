@@ -25,8 +25,6 @@ class DataFactory:
         style_root_path = os.path.join(self.core_management.data_path, "style_dataset")
         all_style_dir = os.listdir(style_root_path)
         for i, style_dir in enumerate(all_style_dir):
-            if 'painting' not in style_dir:
-                continue
             style_dir_path = os.path.join(style_root_path, style_dir)
             curr_style_images = os.listdir(style_dir_path)
             for j, style_image in enumerate(curr_style_images):
