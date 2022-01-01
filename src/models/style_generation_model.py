@@ -72,7 +72,7 @@ class StyleGenerationModel(VirtualBaseModel):
 
         self.device = None
         self.batch_size = 16
-        self.total_epoch = 2000
+        self.total_epoch = 100
         self.lr = 0.0002
         self.beta1 = 0.5  # for Adam optimizer
         self.regularization = 1e-4  # 这个值越大，最终得到得分布值越接近于恒等于mean
@@ -149,7 +149,7 @@ class StyleGenerationModel(VirtualBaseModel):
 
         # =========== 分割线 ============
 
-        self.optimizer_G_.zero_grad()
+        self.generator_.zero_grad()
         label.fill_(self.real_label)
         output = self.discriminator_(fake).view(-1)
         errG = self.loss(output, label)
@@ -159,12 +159,12 @@ class StyleGenerationModel(VirtualBaseModel):
         if i % 50 == 0:
             self.log_factory.InfoLog("epoch={}/{}, i={}, loss_G={}, loss_D={}".format(
                 epoch, self.get_total_epochs(), i, errG.item(), errD.item()))
-        if epoch % 100 == 0:
+        if i % 300 == 0:
             with torch.no_grad():
                 noise = torch.randn(style_data[0].shape[0], self.nz, 1, 1, device=self.device)
                 output_images = self.generator_(noise).permute(0, 2, 3, 1).cpu().numpy()
                 for k in range(output_images.shape[0]):
-                    cv2.imwrite(os.path.join(self.core_management.data_path, "generated_styles/" + str(k) + ".png"), output_images[k])
+                    cv2.imwrite(os.path.join(self.core_management.data_path, "generated_styles/" + str(k) + ".png"), output_images[k] * 255)
 
 
         self.generator_losses_.append(errG.item())

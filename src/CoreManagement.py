@@ -20,6 +20,7 @@ class CoreComponent:
         self.data_path = os.path.join(self.root_path, 'data')
         print("The root path of our project: ", self.root_path)
         self.device = param_dict['device']
+        self.run_type = param_dict['run_type']
 
         self.model_name = param_dict['model']
         if self.model_name == 'default':
@@ -38,7 +39,7 @@ class CoreComponent:
         self.train_style = None
         self.test_style = None
 
-        self.train_percent = 0.95  # 如果不需要test集，就把这一参数设置成1.0
+        self.train_percent = 0.99  # 如果不需要test集，就把这一参数设置成1.0
         self.batch_size = 16
         self.total_epoch = 2000
         self.random_seed = param_dict['random_seed']
@@ -54,9 +55,6 @@ class CoreComponent:
         self.data_factory.initialization()
         self.log_factory.InfoLog(sentences="Data Factory fully created")
 
-        # TODO: DataSet Read with [B, C, H, W] mode and Process and Augmentation (Yining / Jiduan)
-        # TODO:     Content DataSet: Images where their style need to be changed
-        # TODO:     Style DataSet: Images which will be used to generate new style
         self.train_style, self.test_style = self.data_factory.get_style_dataset(train_percent=self.train_percent)
 
         torch.random.manual_seed(self.random_seed)
@@ -81,7 +79,7 @@ class CoreComponent:
 
     def style_transfer(self):
         cloth = read_img(os.path.join(self.data_path, 'cloth.jpg'))
-        style_texture = read_img(os.path.join(self.data_path, 'texture.png'))
+        style_texture = read_img(os.path.join(self.data_path, 'generated_styles/1.png'))
         mask = np.mean(cloth, 2)[:, :, np.newaxis] < 244
         cloth = numpy2Tensor(cloth)
         style_texture = numpy2Tensor(style_texture)
@@ -101,13 +99,11 @@ class CoreComponent:
 
     def run(self):
         if self.model_name == 'default':
-            # TODO: 1. Style generation (Ge Cao)
-            # TODO: Your DataSet: self.train_style, self.test_style;    your output: style_images
-            self.style_generation()
+            if self.run_type == 'style_generation' or self.run_type == 'both':
+                self.style_generation()
 
-            # TODO: 2. Style Transfer (Han Yang)
-            # TODO: Your DataSet: style_images, self.train_content, self.test_content(如果不需要测试集，就把它当作验证集来用)
-            # self.style_transfer()
+            if self.run_type == 'style_transfer' or self.run_type == 'both':
+                self.style_transfer()
 
     def kill(self):
         self.log_factory.kill()

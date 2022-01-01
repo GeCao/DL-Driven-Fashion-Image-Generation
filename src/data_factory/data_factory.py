@@ -22,16 +22,20 @@ class DataFactory:
 
     def get_style_dataset(self, train_percent):
         full_data = []  # train + test, split them later
-        # TODO: please pass your read and processed dataset to core management
-        style_root_path = os.path.join(self.core_management.data_path, "dl_style_dataset")
+        style_root_path = os.path.join(self.core_management.data_path, "style_dataset")
         all_style_dir = os.listdir(style_root_path)
         for i, style_dir in enumerate(all_style_dir):
+            if 'painting' not in style_dir:
+                continue
             style_dir_path = os.path.join(style_root_path, style_dir)
             curr_style_images = os.listdir(style_dir_path)
             for j, style_image in enumerate(curr_style_images):
                 file_path = os.path.join(style_dir_path, style_image)
-                curr_img = read_img(file_path, (64, 64))
-                full_data.append(curr_img)
+                try:
+                    curr_img = read_img(file_path, (64, 64))
+                    full_data.append(curr_img)
+                except:
+                    pass
         full_data = np.array(full_data)
 
         # data set split as (1 - train_percent) * TestSet + train_percent * TrainSet
