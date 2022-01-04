@@ -2,6 +2,7 @@ from enum import Enum
 import numpy as np
 import torchvision.utils as vutils
 import matplotlib.pyplot as plt
+import torch.nn as nn
 import torch
 import cv2
 
@@ -12,7 +13,7 @@ class MessageAttribute(Enum):
     EError = 2
 
 
-def model_evaluation(test_losses, train_losses, save_path, epoch_step=200):
+def model_evaluation(test_losses, train_losses, save_path, epoch_step=1):
     n = len(test_losses)
     epochs = [int(i * epoch_step) for i in range(n)]
 
@@ -22,9 +23,8 @@ def model_evaluation(test_losses, train_losses, save_path, epoch_step=200):
     plt.plot(epochs, test_losses, 'orange', label="test")
     plt.plot(epochs, train_losses, 'b', label="train")
     plt.ylabel("loss")
-    plt.ylim(0, 1)
     plt.legend()
-    fig.save(save_path)
+    fig.savefig(save_path)
 
 
 def plot_training_images(dataloader, device='cuda'):
@@ -121,3 +121,264 @@ def FXAA(np_data, min_thresold=100, thresold=0.5):
             output_data[i, j, :] = np_data[i, j, :] * (1 - filter[i, j]) + \
                                    np_data[i + int(pixel_step[i, j, 0]), j + int(pixel_step[i, j, 1]), :] * filter[i, j]
     return output_data
+
+
+class Generator256(nn.Module):
+    def __init__(self, nz, num_of_generator_features, channels):
+        super(Generator256, self).__init__()
+        self.main = nn.Sequential(
+            # input is Z, going into a convolution
+            nn.ConvTranspose2d(nz, num_of_generator_features * 32, 4, 1, 0, bias=False),
+            nn.BatchNorm2d(num_of_generator_features * 32),
+            nn.ReLU(True),
+            # state size. (ngf*32) x 4 x 4
+            nn.ConvTranspose2d(num_of_generator_features * 32, num_of_generator_features * 16, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_generator_features * 16),
+            nn.ReLU(True),
+            # state size. (ngf*16) x 8 x 8
+            nn.ConvTranspose2d(num_of_generator_features * 16, num_of_generator_features * 8, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_generator_features * 8),
+            nn.ReLU(True),
+            # state size. (ngf*8) x 16 x 16
+            nn.ConvTranspose2d(num_of_generator_features * 8, num_of_generator_features * 4, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_generator_features * 4),
+            nn.ReLU(True),
+            # state size. (ngf*4) x 32 x 32
+            nn.ConvTranspose2d(num_of_generator_features * 4, num_of_generator_features * 2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_generator_features * 2),
+            nn.ReLU(True),
+            # state size. (ngf*2) x 64 x 64
+            nn.ConvTranspose2d(num_of_generator_features * 2, num_of_generator_features, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_generator_features),
+            nn.ReLU(True),
+            # state size. (ngf) x 128 x 128
+            nn.ConvTranspose2d(num_of_generator_features, channels, 4, 2, 1, bias=False),
+            nn.Tanh()
+            # state size. (nc) x 256 x 256
+        )
+
+    def forward(self, input):
+        return self.main(input)
+
+
+class Discriminator256(nn.Module):
+    def __init__(self, num_of_discriminator_features, channels):
+        super(Discriminator256, self).__init__()
+        self.main = nn.Sequential(
+            # input is (nc) x 256 x 256
+            nn.Conv2d(channels, num_of_discriminator_features, 4, 2, 1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf) x 128 x 128
+            nn.Conv2d(num_of_discriminator_features, num_of_discriminator_features * 2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_discriminator_features * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*2) x 64 x 64
+            nn.Conv2d(num_of_discriminator_features * 2, num_of_discriminator_features * 4, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_discriminator_features * 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf) x 32 x 32
+            nn.Conv2d(num_of_discriminator_features * 4, num_of_discriminator_features * 8, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_discriminator_features * 8),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*2) x 16 x 16
+            nn.Conv2d(num_of_discriminator_features * 8, num_of_discriminator_features * 16, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_discriminator_features * 16),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*4) x 8 x 8
+            nn.Conv2d(num_of_discriminator_features * 16, num_of_discriminator_features * 32, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_discriminator_features * 32),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*8) x 4 x 4
+            nn.Conv2d(num_of_discriminator_features * 32, 1, 4, 1, 0, bias=False),
+            nn.Sigmoid()
+        )
+
+    def forward(self, input):
+        return self.main(input)
+
+
+class Generator128(nn.Module):
+    def __init__(self, nz, num_of_generator_features, channels):
+        super(Generator128, self).__init__()
+        self.main = nn.Sequential(
+            # input is Z, going into a convolution
+            nn.ConvTranspose2d(nz, num_of_generator_features * 32, 4, 1, 0, bias=False),
+            nn.BatchNorm2d(num_of_generator_features * 32),
+            nn.ReLU(True),
+            # state size. (ngf*32) x 4 x 4
+            nn.ConvTranspose2d(num_of_generator_features * 32, num_of_generator_features * 16, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_generator_features * 16),
+            nn.ReLU(True),
+            # state size. (ngf*16) x 8 x 8
+            nn.ConvTranspose2d(num_of_generator_features * 16, num_of_generator_features * 8, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_generator_features * 8),
+            nn.ReLU(True),
+            # state size. (ngf*8) x 16 x 16
+            nn.ConvTranspose2d(num_of_generator_features * 8, num_of_generator_features * 4, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_generator_features * 4),
+            nn.ReLU(True),
+            # state size. (ngf*4) x 32 x 32
+            nn.ConvTranspose2d(num_of_generator_features * 4, num_of_generator_features * 2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_generator_features * 2),
+            nn.ReLU(True),
+            # state size. (ngf*2) x 64 x 64
+            nn.ConvTranspose2d(num_of_generator_features * 2, num_of_generator_features, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_generator_features),
+            nn.ReLU(True),
+            # state size. (ngf) x 128 x 128
+            nn.ConvTranspose2d(num_of_generator_features, channels, 4, 2, 1, bias=False),
+            nn.Tanh()
+            # state size. (nc) x 256 x 256
+        )
+
+    def forward(self, input):
+        return self.main(input)
+
+
+class Discriminator128(nn.Module):
+    def __init__(self, num_of_discriminator_features, channels):
+        super(Discriminator128, self).__init__()
+        self.main = nn.Sequential(
+            # input is (nc) x 256 x 256
+            nn.Conv2d(channels, num_of_discriminator_features, 4, 2, 1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf) x 128 x 128
+            nn.Conv2d(num_of_discriminator_features, num_of_discriminator_features * 2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_discriminator_features * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*2) x 64 x 64
+            nn.Conv2d(num_of_discriminator_features * 2, num_of_discriminator_features * 4, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_discriminator_features * 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf) x 32 x 32
+            nn.Conv2d(num_of_discriminator_features * 4, num_of_discriminator_features * 8, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_discriminator_features * 8),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*2) x 16 x 16
+            nn.Conv2d(num_of_discriminator_features * 8, num_of_discriminator_features * 16, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_discriminator_features * 16),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*4) x 8 x 8
+            nn.Conv2d(num_of_discriminator_features * 16, num_of_discriminator_features * 32, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_discriminator_features * 32),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*8) x 4 x 4
+            nn.Conv2d(num_of_discriminator_features * 32, 1, 4, 1, 0, bias=False),
+            nn.Sigmoid()
+        )
+
+    def forward(self, input):
+        return self.main(input)
+
+
+class Generator128(nn.Module):
+    def __init__(self, nz, num_of_generator_features, channels):
+        super(Generator128, self).__init__()
+        self.main = nn.Sequential(
+            # input is Z, going into a convolution
+            nn.ConvTranspose2d(nz, num_of_generator_features * 16, 4, 1, 0, bias=False),
+            nn.BatchNorm2d(num_of_generator_features * 16),
+            nn.ReLU(True),
+            # state size. (ngf*16) x 4 x 4
+            nn.ConvTranspose2d(num_of_generator_features * 16, num_of_generator_features * 8, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_generator_features * 8),
+            nn.ReLU(True),
+            # state size. (ngf*8) x 8 x 8
+            nn.ConvTranspose2d(num_of_generator_features * 8, num_of_generator_features * 4, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_generator_features * 4),
+            nn.ReLU(True),
+            # state size. (ngf*4) x 16 x 16
+            nn.ConvTranspose2d(num_of_generator_features * 4, num_of_generator_features * 2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_generator_features * 2),
+            nn.ReLU(True),
+            # state size. (ngf*2) x 32 x 32
+            nn.ConvTranspose2d(num_of_generator_features * 2, num_of_generator_features, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_generator_features),
+            nn.ReLU(True),
+            # state size. (ngf) x 64 x 64
+            nn.ConvTranspose2d(num_of_generator_features, channels, 4, 2, 1, bias=False),
+            nn.Tanh()
+            # state size. (nc) x 128 x 128
+        )
+
+    def forward(self, input):
+        return self.main(input)
+
+
+class Discriminator128(nn.Module):
+    def __init__(self, num_of_discriminator_features, channels):
+        super(Discriminator128, self).__init__()
+        self.main = nn.Sequential(
+            # input is (nc) x 128 x 128
+            nn.Conv2d(channels, num_of_discriminator_features, 4, 2, 1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf) x 64 x 64
+            nn.Conv2d(num_of_discriminator_features, num_of_discriminator_features * 2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_discriminator_features * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*2) x 32 x 32
+            nn.Conv2d(num_of_discriminator_features * 2, num_of_discriminator_features * 4, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_discriminator_features * 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf) x 16 x 16
+            nn.Conv2d(num_of_discriminator_features * 4, num_of_discriminator_features * 8, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_discriminator_features * 8),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*2) x 8 x 8
+            nn.Conv2d(num_of_discriminator_features * 8, num_of_discriminator_features * 16, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(num_of_discriminator_features * 16),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*8) x 4 x 4
+            nn.Conv2d(num_of_discriminator_features * 16, 1, 4, 1, 0, bias=False),
+            nn.Sigmoid()
+        )
+
+    def forward(self, input):
+        return self.main(input)
+
+
+#loss function with rel/abs Lp loss
+class LpLoss(object):
+    def __init__(self, d=2, p=2, size_average=True, reduction=True):
+        super(LpLoss, self).__init__()
+
+        #Dimension and Lp-norm type are postive
+        assert d > 0 and p > 0
+
+        self.d = d
+        self.p = p
+        self.reduction = reduction
+        self.size_average = size_average
+
+    def abs(self, x, y):
+        num_examples = x.size()[0]
+
+        #Assume uniform mesh
+        h = 1.0 / (x.size()[1] - 1.0)
+
+        all_norms = (h**(self.d/self.p))*torch.norm(x.view(num_examples,-1) - y.view(num_examples,-1), self.p, 1)
+
+        if self.reduction:
+            if self.size_average:
+                return torch.mean(all_norms)
+            else:
+                return torch.sum(all_norms)
+
+        return all_norms
+
+    def rel(self, x, y):
+        num_examples = x.size()[0]
+
+        diff_norms = torch.norm(x.reshape(num_examples,-1) - y.reshape(num_examples,-1), self.p, 1)
+        y_norms = torch.norm(y.reshape(num_examples,-1), self.p, 1)
+
+        if self.reduction:
+            if self.size_average:
+                return torch.mean(diff_norms/y_norms)
+            else:
+                return torch.sum(diff_norms/y_norms)
+
+        return diff_norms/y_norms
+
+    def __call__(self, x, y):
+        return self.rel(x, y)

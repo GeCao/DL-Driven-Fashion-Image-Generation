@@ -3,6 +3,8 @@ import numpy as np
 from src.utils import FXAA, read_img
 import matplotlib.pyplot as plt
 import cv2
+import torch
+import torch.nn as nn
 
 '''
 file_path = os.path.join(os.path.abspath(os.curdir), 'data/transferred.png')

@@ -71,8 +71,8 @@ class StyleGenerationModel(VirtualBaseModel):
         super(StyleGenerationModel, self).__init__(core_management)
 
         self.device = None
-        self.batch_size = 16
-        self.total_epoch = 100
+        self.batch_size = 64
+        self.total_epoch = 50
         self.lr = 0.0002
         self.beta1 = 0.5  # for Adam optimizer
         self.regularization = 1e-4  # 这个值越大，最终得到得分布值越接近于恒等于mean

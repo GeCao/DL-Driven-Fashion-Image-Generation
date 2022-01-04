@@ -53,7 +53,8 @@ class StyleTransferModel(VirtualBaseModel):
         loss3 = self.vgg_loss(self.noise, self.cloth) * 50
         loss = loss1 + loss2 + loss3
         if epoch % 50 == 0:
-            self.log_factory.InfoLog("epoch={}, style_loss={}, L1_loss={}, vgg_loss={}".format(epoch, loss1, loss2, loss3))
+            self.log_factory.InfoLog("epoch={}/{}, style_loss={}, L1_loss={}, vgg_loss={}".format(
+                epoch, self.total_epoch, loss1, loss2, loss3))
 
         loss.backward()
         self.optimizer.step()
